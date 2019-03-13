@@ -1,0 +1,25 @@
+{
+    "name": "mongdch/mon-container",
+    "description": "the php factory container utils.",
+    "version" : "1.0.0",
+    "license": "MIT",
+    "keywords": [
+        "container",
+        "factory",
+        "php"
+    ],
+    "authors": [
+        {
+            "name": "MonGDCH",
+            "email": "985558837@qq.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "mon\\factory\\" : "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.6.0"
+    }
+}
