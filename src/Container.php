@@ -43,7 +43,7 @@ class Container
      */
     public static function instance()
     {
-        if(!self::$instance){
+        if (!self::$instance) {
             self::$instance = new self();
         }
 
@@ -78,7 +78,8 @@ class Container
     /**
      * 私有化构造方法
      */
-    protected function __construct(){}
+    protected function __construct()
+    { }
 
     /**
      * 魔术方法获取实例
@@ -101,23 +102,19 @@ class Container
     public function bind($abstract, $server = null)
     {
         // 传入数组，批量注册
-        if(is_array($abstract)){
-            foreach($abstract as $prefix => $service)
-            {
+        if (is_array($abstract)) {
+            foreach ($abstract as $prefix => $service) {
                 // 数组，定义前缀并绑定服务
-                if(is_array($service)){
-                    foreach($service as $k => $v)
-                    {
+                if (is_array($service)) {
+                    foreach ($service as $k => $v) {
                         $name = $prefix . '_' . $k;
-                        $this->register($name, $v); 
+                        $this->register($name, $v);
                     }
-                }
-                else{
+                } else {
                     $this->register($prefix, $service);
                 }
             }
-        }
-        else{
+        } else {
             $this->register($abstract, $server);
         }
 
@@ -145,28 +142,24 @@ class Container
      */
     public function make($name, $vars = [], $new = false)
     {
-        if(isset($this->service[$name]) && !$new){
+        if (isset($this->service[$name]) && !$new) {
             $object = $this->service[$name];
-        }
-        else{
-            if(isset($this->bind[$name])){
+        } else {
+            if (isset($this->bind[$name])) {
                 // 存在标识
                 $service = $this->bind[$name];
 
-                if($service instanceof Closure){
+                if ($service instanceof Closure) {
                     // 匿名函数，绑定参数
                     $object = $this->invokeFunction($service, $vars);
-                }
-                elseif(is_object($service)){
+                } elseif (is_object($service)) {
                     // 已实例化的对象
                     $object = $service;
-                }
-                else{
+                } else {
                     // 类对象，回调获取实例
                     $object = $this->make($service, $vars, $new);
                 }
-            }
-            else{
+            } else {
                 // 不存在，判断为直接写入的类对象, 获取实例
                 $object = $this->invokeClass($name, $vars);
             }
@@ -204,28 +197,26 @@ class Container
      */
     public function invokeMethd($method, $vars = [])
     {
-        if(is_string($method)){
+        // 字符串转数组
+        if (is_string($method)) {
             $method = explode('@', $method);
         }
 
-        if(is_array($method)){
-            $class = is_object($method[0]) ? $method[0] : $this->invokeClass($method[0]);
-            $reflact = new ReflectionMethod($class, $method[1]);
-        }
-        else{
-            $reflact = new ReflectionMethod($method);
-        }
+        // 反射绑定类方法
+        $class = is_object($method[0]) ? $method[0] : $this->invokeClass($method[0]);
+        $reflact = new ReflectionMethod($class, $method[1]);
 
+        // 绑定参数
         $args = $this->bindParams($reflact, $vars);
 
-        return $reflact->invokeArgs(isset($class) ? $class : null, $args);
+        return $reflact->invokeArgs($class, $args);
     }
 
     /**
      * 反射执行对象实例化，支持构造方法依赖注入
      *
-     * @param  [type] $class 对象名称
-     * @param  [type] $vars  绑定构造方法参数
+     * @param  string $class 对象名称
+     * @param  array  $vars  绑定构造方法参数
      * @return [type]        [description]
      */
     public function invokeClass($class, $vars = [])
@@ -234,11 +225,10 @@ class Container
         // 获取构造方法
         $constructor = $reflect->getConstructor();
 
-        if($constructor){
+        if ($constructor) {
             // 存在构造方法
             $args = $this->bindParams($constructor, $vars);
-        }
-        else{
+        } else {
             $args = [];
         }
 
@@ -253,10 +243,9 @@ class Container
      */
     public function invoke($callback, $vars = [])
     {
-        if($callback instanceof Closure){
+        if ($callback instanceof Closure) {
             $result = $this->invokeFunction($callback, $vars);
-        }
-        else{
+        } else {
             $result = $this->invokeMethd($callback, $vars);
         }
 
@@ -266,7 +255,7 @@ class Container
     /**
      * 注册服务容器
      *
-     * @param [type] $name     名称
+     * @param string $name     名称
      * @param [type] $server   要绑定的实例
      *
      * @return $this
@@ -274,15 +263,15 @@ class Container
     protected function register($name, $server)
     {
         // 闭包，绑定闭包
-        if($server instanceof Closure){ 
+        if ($server instanceof Closure) {
             $this->bind[$name] = $server;
         }
         // 实例化后的对象, 保存到实例容器中
-        elseif(is_object($server)){     
+        elseif (is_object($server)) {
             $this->service[$name] = $server;
         }
         // 对象类名称，先保存，不实例化
-        else{
+        else {
             $this->bind[$name] = $server;
         }
 
@@ -299,7 +288,7 @@ class Container
     protected function bindParams($reflact, $vars = [])
     {
         $args = [];
-        if($reflact->getNumberOfParameters() > 0){
+        if ($reflact->getNumberOfParameters() > 0) {
             // 判断数组类型 数字数组时按顺序绑定参数
             reset($vars);
             $type = key($vars) === 0 ? 1 : 0;
@@ -308,26 +297,21 @@ class Container
             $params = $reflact->getParameters();
 
             // 获取参数类型, 绑定参数
-            foreach($params as $param)
-            {
+            foreach ($params as $param) {
                 $name  = $param->getName();
                 $class = $param->getClass();
 
                 if ($class) {
                     $className = $class->getName();
                     $args[] = $this->make($className);
-                }
-                elseif (1 == $type && !empty($vars)) {
+                } elseif (1 == $type && !empty($vars)) {
                     $args[] = array_shift($vars);
-                } 
-                elseif (0 == $type && isset($vars[$name])) {
+                } elseif (0 == $type && isset($vars[$name])) {
                     $args[] = $vars[$name];
-                }
-                elseif ($param->isDefaultValueAvailable()) {
+                } elseif ($param->isDefaultValueAvailable()) {
                     $args[] = $param->getDefaultValue();
-                }
-                else {
-                    throw new InvalidArgumentException('bind parameters were not found!['.$name.']', 500);
+                } else {
+                    throw new InvalidArgumentException('bind parameters were not found![' . $name . ']', 500);
                 }
             }
         }
